@@ -3,6 +3,21 @@ const bcrypt = require('bcrypt-nodejs')
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
+const knex = require('knex');
+
+const db = knex({
+    client: 'pg',
+    connection: {
+        host: '127.0.0.1',
+        user: 'postgres',
+        password: '1234',
+        database: 'appdb'
+    }
+});
+
+
+
+db.select('*').from ('users').then(data => console.log(data));
 
 app.use(cors());
 
@@ -35,34 +50,27 @@ app.get('/', function(req, res){
 
 app.get('/profile/:id', function(req, res){
     const {id} = req.params;
-    let found = false;
 
-    database.users.forEach(user =>{
-        if(user.id === id){
-        found = true;
-        return res.json(user);
-    }
-    })
-    if (!found) {
-        return res.status(400).json('no such user');
-    }
+    db.select('*').from('users')
+        .where({id:id})
+        .then(user =>{
+            if(user.length){
+                res.json(user[0]);
+            }
+            else{
+                res.status(400).json('No such user');
+            }
+        }).catch(err=> console.log(err));
+
 
 });
 
-app.post('/image', (req, res)=>{
+app.put('/image', (req, res)=>{
     const {id} = req.body;
-    let found = false;
+    db('users').where('id', '=', id).increment ('entries', 1).returning('entries').then(entries=>{
+            res.json(entries[0])
+        }).catch(err=> res.status(400).json('Unable to get image count'));
 
-    database.users.forEach(user =>{
-        if(user.id === id){
-        found = true;
-        user.entries ++;
-        return res.json(user.entries);
-    }
-    })
-    if (!found) {
-        return res.status(400).json('no such user');
-    }
 });
 
 
@@ -81,21 +89,34 @@ app.post('/signin', (req, res) =>{
 
 app.post('/register', (req, res)=>{
     const { email, name, password} = req.body;
+    const hash = bcrypt.hashSync(password);
 
-    /*bcrypt.hash(password, null, null, function(err, hash) {
-        // Store hash in your password DB.
-        console.log(hash);
-    });*/
-    database.users.push({
-       /* id: id,*/
-        name: name,
-        password: password,
-        email: email,
-        entries: 0,
-        joined: new Date()
-    })
+  /*  bcrypt.compareSync("bacon", hash); // true
+    bcrypt.compareSync("veggies", hash); // false*/
+    db.transaction(trx=>{
+        trx.insert({
+            hash: hash,
+            email: email
+        })
+            .into('login')
+            .returning('email')
+            .then(loginEmail=>{
+                return  trx('users')
+                    .returning('*')
+                    .insert({
+                        name: name,
+                        email: loginEmail[0],
+                        joined: new Date()
+                    }).then(user =>{
+                        res.json(user[0])
+                    })
+            })
+            .then (trx.commit)
+            .then(trx.rollback)
 
-    res.json(database.users[database.users.length-1]);
+    }).catch(err=> res.status(400).json( 'Could not register user'));
+
+
 })
 
 app.put('/image', (req, res) =>{
