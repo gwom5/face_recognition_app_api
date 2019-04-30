@@ -16,33 +16,9 @@ const db = knex({
 });
 
 
-
-
-
 app.use(cors());
 
 app.use(bodyParser.json());
-/*const database = {
-    users: [
-        {
-            id: '123',
-            name: 'chomo',
-            password: 'cookies',
-            email: 'chomogwom@yahoo.com',
-            entries: 0,
-            joined: new Date()
-        },
-        {
-            id: '124',
-            name: 'emma',
-            password: 'cookies',
-            email: 'emmagwom@yahoo.com',
-            entries: 0,
-            joined: new Date()
-        }
-
-    ]
-}*/
 
 app.get('/', function(req, res){
     db.select('*').from('users')
@@ -163,20 +139,3 @@ app.put('/image', (req, res) =>{
 app.listen(3000, ()=>{
     console.log("App is running on port 3000")
 })
-
-
-
-
-// Load hash from your password DB.
-/*bcrypt.compare("bacon", hash, function(err, res) {
-    // res == true
-});
-bcrypt.compare("veggies", hash, function(err, res) {
-    // res = false
-});*/
-/*
-* --res = this is working
-* /signin  --> POST = successful/fail
-* /register  --> POST = user
-* /profile/:userId --> GET = user
-* */
