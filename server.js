@@ -17,12 +17,12 @@ const db = knex({
 
 
 
-db.select('*').from ('users').then(data => console.log(data));
+
 
 app.use(cors());
 
 app.use(bodyParser.json());
-const database = {
+/*const database = {
     users: [
         {
             id: '123',
@@ -42,10 +42,24 @@ const database = {
         }
 
     ]
-}
+}*/
 
 app.get('/', function(req, res){
-    res.send(database.users);
+    db.select('*').from('users')
+        .then(data=>{
+            if(data.length){
+
+
+                /**/
+                return res.json(data);
+            }
+            else
+            {
+                return res.status(400).json("There are no users");
+            }
+
+        })
+        .catch(err=> res.status(400).json("Could not get users"));
 })
 
 app.get('/profile/:id', function(req, res){
